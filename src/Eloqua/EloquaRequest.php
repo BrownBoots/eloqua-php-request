@@ -1,5 +1,5 @@
 <?php
-
+namespace Eloqua;
 /**
  * REST client for Eloqua's API.
  */
@@ -9,13 +9,20 @@ class EloquaRequest
     public $baseUrl;
     public $responseInfo;
 
-	public function __construct($site, $user, $pass, $baseUrl)
+	/**
+	 * @param $companySiteName
+	 * @param $user
+	 * @param $pass
+	 * @param $APIversion integer
+	 */
+	public function __construct($companySiteName, $user, $pass, $APIversion)
 	{
 		// basic authentication credentials
-		$credentials = $site . '\\' . $user . ':' . $pass;
+		$credentials = $companySiteName . '\\' . $user . ':' . $pass;
 
 		// set the base URL for the API endpoint
-		$this->baseUrl = $baseUrl;		
+		// based on version
+		$this->baseUrl = 'https://secure.eloqua.com/API/REST/'.(int)$APIversion.'.0';
 
 		// initialize the cURL resource
 		$this->ch = curl_init();
@@ -89,9 +96,9 @@ class EloquaRequest
         $this->responseInfo = curl_getinfo($this->ch);
         $httpCode = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
         
-        if ($httpCode > 400) 
+        if ($httpCode >= 400)
         {            
-            print_r($this->responseInfo);            
+            trigger_error(print_r($this->responseInfo, true), E_USER_WARNING);
         }
         
         // todo : add support in constructor for contentType {xml, json}	
@@ -99,4 +106,4 @@ class EloquaRequest
 	}
 }
 
-?>
+

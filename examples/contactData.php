@@ -1,15 +1,19 @@
 <?php
 
 // include the Eloqua REST client and models
-include_once('../eloquaRequest.php');
-include_once('../models/data/contact.php');
+include_once(__DIR__.'/../vendor/autoload.php');
 
+
+$pw = "pass";
+$user = 'user';
+$company = 'companyName';
 // instantiate a new instance of the Client
-$client = new EloquaRequest('site', 'user', 'password', 'https://secure.eloqua.com/API/REST/1.0');
+$client = new Eloqua\EloquaRequest($company, $user, $pw, 2);
 
 // invoke a GET request to List all contacts
-$contacts = $client->get('/data/contacts?search=*&count=100&page=1');
-
+$contacts = $client->get('data/contacts?search=*&count=10&page=1');
+print_r($contacts);
+/*
 // instantiate a new instance of the Contact class  
 $contact = new Contact();  
 $contact->firstName = 'Sample';  
@@ -31,5 +35,4 @@ $response = $client->put('/data/contact/' . $contactId, $contact);
 
 // delete the contact
 $client->delete('/data/contact/' . $contactId);  
-
-?>
+*/

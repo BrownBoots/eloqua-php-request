@@ -1,0 +1,13 @@
+{
+    "name": "stratease/eloqua-php-request",
+    "description": "Eloqua REST API",
+    "keywords": [
+          "eloqua", "rest", "api", "php"
+    ],
+    "require": {
+        "php": ">=5.3.3"
+    },
+    "autoload":{
+        "psr-4":{"Eloqua\\":"src/Eloqua/"}
+    }
+}
