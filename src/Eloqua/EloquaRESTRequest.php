@@ -3,32 +3,33 @@ namespace Eloqua;
 /**
  * REST client for Eloqua's API.
  */
-class EloquaRequest
+class EloquaRESTRequest
 {
     private $ch;
-    public $baseUrl;
+    protected $baseUrl;
     public $responseInfo;
 
+	/**
+	 * @var null Used for our singleton pattern
+	 */
+	protected static $instance = null;
 	/**
 	 * @param $companySiteName
 	 * @param $user
 	 * @param $pass
 	 * @param $APIversion integer
 	 */
-	public function __construct($companySiteName, $user, $pass, $APIversion)
+	public function __construct($companySiteName, $user, $pass, $APIversion = 2)
 	{
 		// basic authentication credentials
 		$credentials = $companySiteName . '\\' . $user . ':' . $pass;
 
-		// set the base URL for the API endpoint
-		// based on version
-		$this->baseUrl = 'https://secure.eloqua.com/API/REST/'.(int)$APIversion.'.0';
+		$this->apiVersion = $APIversion;
 
 		// initialize the cURL resource
 		$this->ch = curl_init();
 
 		// set cURL and credential options
-		curl_setopt($this->ch, CURLOPT_URL, $this->baseUrl);
 		curl_setopt($this->ch, CURLOPT_USERPWD, $credentials); 
 
 		// set headers
@@ -37,6 +38,69 @@ class EloquaRequest
 
 		// return transfer as string
 		curl_setopt($this->ch, CURLOPT_RETURNTRANSFER, TRUE);
+	}
+
+	/**
+	 * Fetches standard REST url based on the /id request.
+	 * http://topliners.eloqua.com/community/code_it/blog/2012/11/30/using-the-eloqua-api--determining-endpoint-urls-logineloquacom
+	 * @return mixed|string
+	 */
+	public function getBaseUrl()
+	{
+		if(isset($this->baseUrl) === false) {
+			if(!($this->baseUrl = $this->fetchIdUrl())) {
+				// timeout? try again...
+				sleep(2);
+				if(!($this->baseUrl = $this->fetchIdUrl())) {
+					// fallback and just guess at this url...
+					$this->baseUrl = 'https://secure.eloqua.com/API/REST/' . (int)$this->apiVersion . '.0/';
+				}
+			}
+		}
+
+		return $this->baseUrl;
+	}
+
+	/**
+	 * @return mixed|null
+	 */
+	protected function fetchIdUrl()
+	{
+		// set the full URL for the request
+		curl_setopt($this->ch, CURLOPT_URL,  'https://login.eloqua.com/id');
+		curl_setopt($this->ch, CURLOPT_CUSTOMREQUEST, 'GET');
+
+		// execute the request
+		$response = curl_exec($this->ch);
+		if($v = json_decode($response)) {
+			// set the base URL for the API endpoint
+			// based on version
+			if (isset($v->urls->apis->rest->standard)) {
+
+				return str_replace('{version}', $this->apiVersion . '.0', $v->urls->apis->rest->standard);
+			}
+		}
+
+		// something went wrong! handle upstream
+		return null;
+	}
+
+	/**
+	 * Using the singleton will help save resources and prevent multiple auth/ID requests (a point of rate limiting to be concerned with)
+	 *
+	 * @param $companySiteName
+	 * @param $user
+	 * @param $pass
+	 * @param $APIVersion
+	 * @return EloquaRequest|null
+	 */
+	public static function singleton($companySiteName, $user, $pass, $APIVersion = 2)
+	{
+		if(isset(self::$instance) === false) {
+			self::$instance = new EloquaRESTRequest($companySiteName, $user, $pass, $APIVersion);
+		}
+
+		return self::$instance;
 	}
 
 	public function __destruct()
@@ -66,8 +130,11 @@ class EloquaRequest
 	
 	public function executeRequest($url, $method, $data=null)
 	{
+
+		$uri = $this->getBaseUrl() . '/' . trim($url, "/");
+
 		// set the full URL for the request
-		curl_setopt($this->ch, CURLOPT_URL, $this->baseUrl . '/' . $url);
+		curl_setopt($this->ch, CURLOPT_URL, $uri);
 
 		switch ($method) {
 			case 'GET':
