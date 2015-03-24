@@ -162,10 +162,10 @@ class EloquaRESTRequest
         // 400 and 500 status codes indicate an error
         $this->responseInfo = curl_getinfo($this->ch);
         $httpCode = curl_getinfo($this->ch, CURLINFO_HTTP_CODE);
-        
+
         if ($httpCode >= 400)
         {            
-            trigger_error(print_r($this->responseInfo, true), E_USER_WARNING);
+            trigger_error('Eloqua API Request failed: '.print_r($this->responseInfo, true), E_USER_WARNING);
         }
         
         // todo : add support in constructor for contentType {xml, json}	
